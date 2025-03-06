@@ -1,9 +1,17 @@
+"""
+Plotting utilities for GRID pipeline data visualization and analysis.
+This module provides functions to visualize detector data, including 
+light curves, energy spectra, and hardware metrics.
+"""
+
+# Standard library imports
 import csv
 import datetime
 import os
 import re
 import struct
 
+# Data visualization and analysis imports
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
@@ -15,13 +23,15 @@ from astropy.io import fits
 from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
 
+# Custom module imports
 import grafica
 import save
 
+# Configure matplotlib for Chinese characters
 mpl.rcParams["font.family"] = "SimHei"
 mpl.rcParams["axes.unicode_minus"] = False
 
-
+# Define color palette for plots
 colors = [(227, 119, 194), (255, 127, 14),
           (44, 160, 44), (214, 39, 40),
           (148, 103, 189), (140, 86, 75),
@@ -29,73 +39,49 @@ colors = [(227, 119, 194), (255, 127, 14),
           (188, 189, 34), (23, 190, 207)]
 
 
-# plt.rc('font', family='Times New Roman')
-
-
+# Define Gaussian function for curve fitting
 def f(x, a, b, c):
+    """
+    Gaussian function for curve fitting.
+    
+    Parameters:
+    - x: Input data point
+    - a: Amplitude
+    - b: Mean (center)
+    - c: Standard deviation
+    
+    Returns:
+    - Gaussian function value at point x
+    """
     return a * np.exp(-(x - b) ** 2 / c ** 2)
-
-# @st.cache
 
 
 def Plot_Extract(ExtractFile):
+    """
+    Generates visualization plots from extracted data files.
+    
+    Creates multiple visualization tabs with different plots:
+    - All plots overview (light curves, spectra, bias voltage, temperature)
+    - Light curve (detailed view)
+    - Energy spectrum (detailed view)
+    - SiPM average bias voltage (detailed view)
+    - SiPM average temperature (detailed view)
+    
+    Parameters:
+    - ExtractFile: List of paths to data files to be plotted
+    """
     n = 0
     Loadpath = 'figure/Extract'
 
     for filepath in ExtractFile:
-
+        # Read data from the file
         datas = save.ReadMid(filepath)
 
+        # Create tabs for different visualizations
         mat, tab1, tab2, tab3, tab4 = st.tabs(
             ["全部图形", "光变曲线", "能谱图", "SiPM平均偏压", "SiPM平均温度"])
         with mat:
-            # plt.figure(figsize=(16, 8))
-            # for i in range(4):
-            #     plt.subplot(221 + i)
-            #     if i < 2:
-            #         if i == 1:
-            #             plt.xscale(r'log')
-            #             plt.title(r"能谱图")
-            #             plt.xlabel(r'波形峰值')
-            #             plt.ylabel(r'计数')
-            #         if i == 0:
-            #             # plt.ylim(0,1600)
-            #             plt.title("光变曲线")
-            #             plt.xlabel('UTC时间/秒')
-            #             plt.ylabel('计数')
-            #         total = np.array([0])
-            #         for k in range(4):
-            #             plt.hist(datas[k][:, i], bins=np.arange(datas[k][:, i].min(), datas[k][:, i].max(), 3),
-            #                      histtype='step', label=f'通道{k}')
-            #             total = np.hstack([total, datas[k][:, i]])
-            #         plt.hist(np.delete(total, [0], axis=0), bins=np.arange(datas[k][:, i].min(), datas[k][:, i].max(), 3),
-            #                  histtype='step', label='总计')
-            #         plt.legend()
-            #     else:
-            #         for k in range(4):
-            #             plt.plot(datas[k][:, 0], datas[k][:, i])
-            #         if i == 2:
-            #             plt.plot(datas[0][:, 0], 28.5 *
-            #                      np.ones(np.size(datas[0][:, 0])), 'k--')
-            #             plt.xlabel(r'UTC时间/秒')
-            #             plt.ylabel(r'SiPM平均偏压/伏特')
-            #             plt.ylim([28.4, 28.6])
-            #         if i == 3:
-            #             plt.xlabel(r'UTC时间/秒')
-            #             plt.ylabel(r'SiPM平均温度/摄氏度')
-
-            # file = filepath.split('Extract')[0]
-
-            # if not os.path.exists(file + r'\figure'):
-            #     os.mkdir(file + r'\figure')
-            # if not os.path.exists(file + Loadpath):
-            #     os.mkdir(file + Loadpath)
-
-            # plt.savefig(file + Loadpath + r'\\' + f'{n}.png', dpi=200)
-            # plt.savefig(file + Loadpath + r'\\' + f'{n}.pdf')
-            # n += 1
-
-            # st.pyplot()
+            # Overview of all plots
             total = np.array([0])
             for plotter in grafica.manager.plotters:
                 fig = grafica.manager.new(
@@ -108,7 +94,6 @@ def Plot_Extract(ExtractFile):
                     total = np.hstack([total, datas[k][:, 0]])
                 fig.histogram(np.delete(total, [0], axis=0), bins=np.arange(
                     datas[k][:, 0].min(), datas[k][:, 0].max(), 3), density=False, label='总计', row=1, col=1, showlegend=False, color=colors[4])
-                # fig.plotly_figure.update_traces(line={'width': 1.5})
                 total = np.array([0])
                 index = 1
                 for k in range(4):
@@ -123,11 +108,6 @@ def Plot_Extract(ExtractFile):
                 for k in range(4):
                     plotly_fig.add_trace(go.Scatter(x=datas[k][:, 0],
                                                     y=datas[k][:, index], name=None, showlegend=False), col=1, row=2)
-                # plotly_fig.add_hline(y=28.5, line_dash="dot", line_color="black",
-                #             annotation_text="28.5V", annotation_position="bottom right")
-                # plotly_fig.update_yaxes(range=[28.4, 28.6])
-                # plotly_fig.update_layout(xaxis_title='UTC时间/秒',
-                #               yaxis_title='SiPM平均偏压/伏特', title='SiPM偏压')
 
                 index = 3
                 plotly_fig = fig.plotly_figure
@@ -141,38 +121,18 @@ def Plot_Extract(ExtractFile):
             plotly_fig.update_yaxes(title='SiPM平均偏压/伏特', row=2, col=1)
             plotly_fig.update_xaxes(title='UTC时间/秒', row=2, col=2)
             plotly_fig.update_yaxes(title='SiPM平均温度/摄氏度', row=2, col=2)
-            # plotly_fig.update_traces(line={'width': 1.5})
             plotly_fig.update_layout(height=600)
             file = filepath.parents[1]
-
-            # if not os.path.exists(file + r'\figure'):
-            #     os.mkdir(file + r'\figure')
-            # if not os.path.exists(file + Loadpath):
-            #     os.mkdir(file + Loadpath)
 
             extract_path = file / 'figure' / 'Extract'
             extract_path.mkdir(exist_ok=True, parents=True)
             
-            # plt.savefig(file + Loadpath + r'\\' + f'{n}.png', dpi=200)
-            # plt.savefig(file + Loadpath + r'\\' + f'{n}.pdf')
             n += 1
-            # plotly_fig.update_layout(xaxis_title='UTC时间/秒', yaxis_title='计数')
             plotly_fig.write_json(extract_path / f'{n}.json')
             st.plotly_chart(plotly_fig, use_container_width=True)
 
-        # 光变曲线
+        # Light curve visualization
         with tab1:
-            # total = np.array([0])
-            # for k in range(4):
-            #     plt.hist(datas[k][:, 0], bins=np.arange(datas[k][:, 0].min(), datas[k][:, 0].max(), 3),
-            #              histtype='step', label=f'通道{k}')
-            #     total = np.hstack([total, datas[k][:, 0]])
-            # plt.hist(np.delete(total, [0], axis=0), bins=np.arange(datas[k][:, 0].min(), datas[k][:, 0].max(), 3),
-            #          histtype='step', label='总计')
-            # plt.legend()
-            # plt.xscale('log')
-            # st.pyplot()
-
             total = np.array([0])
             for plotter in grafica.manager.plotters:
                 fig = grafica.manager.new(
@@ -190,17 +150,8 @@ def Plot_Extract(ExtractFile):
             plotly_fig.update_layout(xaxis_title='UTC时间/秒', yaxis_title='计数')
             st.plotly_chart(plotly_fig, use_container_width=True)
 
-        # 能谱图
+        # Energy spectrum visualization
         with tab2:
-            # total = np.array([0])
-            # for k in range(4):
-            #     plt.hist(datas[k][:, 1], bins=np.arange(datas[k][:, 1].min(), datas[k][:, 1].max(), 3),
-            #              histtype='step', label=f'通道{k}')
-            #     total = np.hstack([total, datas[k][:, 0]])
-            # plt.hist(np.delete(total, [0], axis=0), bins=np.arange(datas[k][:, 1].min(), datas[k][:, 1].max(), 3),
-            #          histtype='step', label='总计')
-            # st.pyplot()
-
             total = np.array([0])
             for plotter in grafica.manager.plotters:
                 fig = grafica.manager.new(
@@ -218,19 +169,9 @@ def Plot_Extract(ExtractFile):
             plotly_fig.update_layout(xaxis_title='波形峰值', yaxis_title='计数')
             st.plotly_chart(plotly_fig, use_container_width=True)
 
+        # SiPM bias voltage visualization
         with tab3:
-            # total = np.array([0])
-
             index = 2
-            # for k in range(4):
-            #     plt.plot(datas[k][:, 0], datas[k][:, index])
-            #     plt.plot(datas[0][:, 0], 28.5 *
-            #              np.ones(np.size(datas[0][:, 0])), 'k--')
-            #     plt.xlabel(r'UTC时间/秒')
-            #     plt.ylabel(r'SiPM平均偏压/伏特')
-            #     plt.ylim([28.4, 28.6])
-            # st.pyplot()
-
             fig = go.Figure()
             for k in range(4):
                 fig.add_scatter(x=datas[k][:, 0],
@@ -242,14 +183,9 @@ def Plot_Extract(ExtractFile):
                               yaxis_title='SiPM平均偏压/伏特', title='SiPM偏压')
             st.plotly_chart(fig, use_container_width=True)
 
+        # SiPM temperature visualization  
         with tab4:
-            # total = np.array([0])
             index = 3
-            # for k in range(4):
-            #     plt.plot(datas[k][:, 0], datas[k][:, index])
-            #     plt.xlabel(r'UTC时间/秒')
-            #     plt.ylabel(r'SiPM平均温度/摄氏度')
-            # st.pyplot()
             fig = go.Figure()
             for k in range(4):
                 fig.add_scatter(x=datas[k][:, 0],
@@ -258,16 +194,27 @@ def Plot_Extract(ExtractFile):
                               yaxis_title='SiPM平均温度/摄氏度', title='SiPM平均温度')
             st.plotly_chart(fig, use_container_width=True)
 
-# @st.cache
-
 
 def Plot_Fix(FixFile):
+    """
+    Generates calibration plots from calibration data files.
+    
+    Creates visualizations with both Matplotlib and Plotly:
+    - Spectral peak analysis
+    - Energy calibration metrics
+    - Peak position and relative error calculation
+    
+    Parameters:
+    - FixFile: List of paths to calibration data files
+    """
     n = 0
-    # Loadpath = r'\figure\Fix'
+    
     for filepath in FixFile:
+        # Read calibration data
         Array = save.ReadMid(filepath)
         tab1, tab2 = st.tabs(["Plotly", "Matplotlib"])
 
+        # Matplotlib visualization with peak fitting
         with tab2:
             plt.figure(figsize=(12, 6), dpi=600)
             plt.title(
@@ -290,12 +237,6 @@ def Plot_Fix(FixFile):
                 plt.text(125, h0[0].max() - (i + 0.5) * h0[0].max() / 5,
                          f'通道{i}峰值能量: {(popt[1] + 0.25):.3f}' + r'$keV$' + '\n' + f'相对误差: {abs(1 - (popt[1] + 0.25) / 59.5) * 100:.3f}%')
                 plt.legend()
-
-            # file = filepath.split('Fix')[0]
-            # if not os.path.exists(file + r'\figure'):
-            #     os.mkdir(file + r'\figure')
-            # if not os.path.exists(file + Loadpath):
-            #     os.mkdir(file + Loadpath)
             
             fix_path = filepath.parents[1] / 'figure' / 'Fix'
             fix_path.mkdir(exist_ok=True, parents=True)
@@ -305,14 +246,15 @@ def Plot_Fix(FixFile):
 
             st.pyplot()
 
+        # Interactive Plotly visualization with data table
         with tab1:
+            # Create dataframe to store peak analysis results
             df = pd.DataFrame(columns=['峰值能量', '相对误差'])
             for plotter in grafica.manager.plotters:
                 fig = grafica.manager.new(
                     plotter_name=plotter,
                 )
                 for i in range(4):
-                    # fig.histogram(samples, label='No args', density=density, bins=10)
                     fig.histogram(Array[i][:, 1], bins=np.arange(
                         0, 1900, 0.5), density=False, label=f'通道{i}')
                     h = plt.hist(Array[i][:, 1], bins=np.arange(
@@ -326,17 +268,13 @@ def Plot_Fix(FixFile):
                         '峰值能量': [f'{(popt[1] + 0.25):.3f} Kev'],
                         '相对误差': [f'{abs(1 - (popt[1] + 0.25) / 59.5) * 100:.3f}%']
                     })], axis=0, ignore_index=True)
-                # h = plt.hist(Array[i][:, 1], bins=np.arange(0, 1900, 0.5), histtype='step', label=f'通道{i}')
             plotly_fig = fig.plotly_figure
-            # plotly_fig.update_layout(title=f'观测时间: {datetime.datetime.fromtimestamp(int(Array[0][:, 0].min()) + 28800)}')
             plotly_fig.update_xaxes(
                 type='log', title=r'能量/keV', range=[np.log10(20), np.log10(800)])
             plotly_fig.update_yaxes(title='计数')
             st.plotly_chart(plotly_fig, use_container_width=True)
             plotly_fig.write_json(fix_path / f'{n}.json')
             df = df.reset_index(names=['通道'])
-            # df = /
             st.write(df)
-            # df
 
         n += 1
