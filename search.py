@@ -6,29 +6,35 @@ import numpy as np
 import streamlit as st
 from matplotlib import pyplot as plt
 
-PACKAGE_LENGTH = 2048
-PACKAGE_HEAD = b'\x6c\xe2\x6c\xe2.{2044}'
+# Constants for data package structure and parsing
+PACKAGE_LENGTH = 2048  # Length of each data package in bytes
+PACKAGE_HEAD = b'\x6c\xe2\x6c\xe2.{2044}'  # Regular expression pattern for package header
+# Dictionary defining byte indices for different fields within the buffer
 BUFFER_INDEX = {'label': 4, 'iframe': 0, 'nframes': [10, 14], 'filetype': 14, 'ifile': 15,
                 'nfileframes': [16, 20], 'ifileframe': [20, 24], 'length': [24, 26],
                 'bcc': [2042, 2044], 'tail': [2044, 2048]}
+# Dictionary mapping file type codes to human-readable names
 FILETYPE = {0x01: "LOG", 0x02: "HK", 0x11: "SCI", 0x12: "TIME",
-            0x13: "IV", 0x21: 'none'}  # 包类型码
-DATA_START = 26
-DATA_LENGTH = 2016
+            0x13: "IV", 0x21: 'none'}  # Package type codes
+DATA_START = 26  # Index where actual data content starts
+DATA_LENGTH = 2016  # Length of data content in each package
 
 
 def find_index(buffer, pattern):
     """
-
+    Find all occurrences of a regex pattern in a binary buffer
+    
     Parameters
     ----------
-    buffer : 文件
-    pattern : 正则表达
+    buffer : bytes
+        The binary data to search within
+    pattern : bytes
+        Regular expression pattern to search for
 
     Returns
     -------
-    index : 符合正则表达的句段头尾索引
-
+    index : ndarray
+        Array of tuples containing start and end indices of matched patterns
     """
     Pattern = re.compile(pattern, re.S)
     index = np.array([(ip.start(), ip.end()) for ip in Pattern.finditer(buffer)])
@@ -37,20 +43,25 @@ def find_index(buffer, pattern):
 
 def subpackage(buffer, istarts, subfile, Type, nfiles):
     """
-
+    Extract and save a subpackage from the buffer
+    
     Parameters
     ----------
-    buffer : .dat文件数据
-    istarts : 各数据帧起始索引
-    subfile : 子文件名
-    Type : 子文件类型
-    nfiles : 子文件编号
+    buffer : bytes
+        Full binary data
+    istarts : list
+        Start indices of data frames
+    subfile : Path
+        Output file path
+    Type : str
+        Type of subfile to extract
+    nfiles : int
+        File number to extract
 
     Returns
     -------
     int
-        DESCRIPTION.
-
+        Status code (0 for success)
     """
     try:
         data = b''
@@ -73,15 +84,17 @@ def subpackage(buffer, istarts, subfile, Type, nfiles):
 
 def find_subfile(filePath):
     """
-
+    Parse a DAT file to find and extract subfiles
+    
     Parameters
     ----------
-    filePath : .dat文件地址
+    filePath : Path
+        Path to the DAT file
 
     Returns
     -------
-    subfiles : 子文件列表，元素为字典
-
+    subfiles : list
+        List of dictionaries containing information about extracted subfiles
     """
     istarts = []
     # if not os.path.exists(filePath.split('.dat')[0]):  # 判断文件是否存在
@@ -128,15 +141,17 @@ def find_subfile(filePath):
 
 def find_sci(buffer):
     """
-
+    Find scientific data patterns in a binary buffer
+    
     Parameters
     ----------
-    buffer :打开的sci子文件包
+    buffer : bytes
+        Binary data from a science file
 
     Returns
     -------
-    feature : 特征数据的索引
-
+    feature : ndarray
+        Array of index tuples for feature data
     """
     featureEventNum = 20
     LenFeature = featureEventNum * 24 + 8
@@ -149,6 +164,21 @@ def find_sci(buffer):
 
 
 def cl02(dat_files):
+    """
+    Classify data files by their extensions
+    
+    Parameters
+    ----------
+    dat_files : list
+        List of data file paths
+
+    Returns
+    -------
+    cl : list
+        Classified files
+    Type : ndarray
+        Array of file extensions
+    """
     Type = []
     cl = []
     for dat_file in dat_files:
@@ -164,6 +194,19 @@ def cl02(dat_files):
 
 
 def find_subfile02(cl):
+    """
+    Alternative method to find subfiles for TianNing-02 data
+    
+    Parameters
+    ----------
+    cl : list
+        List of file paths
+
+    Returns
+    -------
+    subfiles : list
+        List of dictionaries with file information
+    """
     Filetype = {'0x1': {'0010': 'LOG', '0011': 'HK'},
                 '0x2': {'0001': 'SCI', '0002': 'TIME', '0003': 'IV'}}
 

@@ -14,6 +14,8 @@ A comprehensive data processing and visualization pipeline for the Gamma Ray Int
 
 ## Project Structure
 
+Directory structure explanation with key files and their purposes
+
 ```
 ├── app.py                # Main Streamlit application entry point
 ├── fix.py                # Energy calibration and address correction
@@ -38,6 +40,8 @@ A comprehensive data processing and visualization pipeline for the Gamma Ray Int
 
 ## Installation
 
+Steps to install and set up the pipeline
+
 1. Clone this repository:
 
 ```bash
@@ -53,6 +57,8 @@ pip install -r requirements.txt
 
 ## Usage
 
+Basic usage instructions
+
 Run the application using Streamlit:
 
 ```bash
@@ -60,6 +66,8 @@ streamlit run SCUGRID_stream.py
 ```
 
 ## Interface Capabilities
+
+Description of what the user interface allows you to do
 
 The interface allows you to:
 
@@ -72,6 +80,8 @@ The interface allows you to:
 
 ## Data Flow
 
+Explanation of how data flows through the pipeline system
+
 1. Raw data files are detected in source directories
 2. Data extraction is performed by the Parser class
 3. Correction and energy reconstruction is applied by the fix module
@@ -79,6 +89,8 @@ The interface allows you to:
 5. Interactive visualizations are generated with the grafica package
 
 ## Directory Structure
+
+Expected directory structure for the pipeline to function correctly
 
 The pipeline expects data in the following directory structure:
 

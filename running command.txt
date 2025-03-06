@@ -1,3 +1,1 @@
-D:
-cd D:\OneDrive - stu.scu.edu.cn\私人\天格计划\pipline\程序\GRID_pipeline
 streamlit run SCUGRID_stream.py

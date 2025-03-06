@@ -16,8 +16,30 @@ import search as fin
 
 
 class Parser:
+    """
+    Data parser for GRID satellite data
+    
+    This class provides methods to extract and parse various types of data
+    from the TianNing satellite data files.
+    """
+    
     def __init__(self, logger, csvfile, datfile, detector, filepath):
+        """
+        Initialize the Parser object
         
+        Parameters
+        ----------
+        logger : Logger
+            Logger object for recording parsing information
+        csvfile : list
+            List of CSV file paths containing telemetry data
+        datfile : list
+            List of data file paths containing science data
+        detector : str
+            Detector name ('天宁01' or '天宁02')
+        filepath : Path
+            Base file path for the observation data
+        """
         self.logger = logger
         self.csvfile = csvfile
         self.logger.info(f'parser:init:csvfile:{csvfile}')
@@ -30,21 +52,21 @@ class Parser:
     @staticmethod
     def Hough(time_data):
         """
-        霍夫变换
+        Apply Hough transform for time calibration
+        
         Parameters
         ----------
-        time_data :
-            时间数据
+        time_data : ndarray
+            Time data to transform
 
         Returns
         -------
-        K :
-            参数k
-        B :
-            参数b
-        V :
-            布尔索引矩阵
-
+        K : ndarray
+            K parameter matrix
+        B : ndarray
+            B parameter matrix
+        V : ndarray
+            Boolean index matrix
         """
         Feq = 1000000
 
@@ -65,17 +87,17 @@ class Parser:
     @staticmethod
     def parser_sci(subfile):
         """
-        解析科学数据中特征量数据
+        Parse scientific data feature quantities
+        
         Parameters
         ----------
-        subfile :
-            sci子文件字典
+        subfile : dict
+            Dictionary containing scientific file information
 
         Returns
         -------
-        ftinfo :
-            sci特征数据，包括晶振/f0、最大峰值、基线。
-
+        ftinfo : list
+            Scientific feature data including oscillator/f0, peak value, baseline
         """
 
         filename = subfile['filename']
@@ -125,22 +147,21 @@ class Parser:
 
     def parser_time(self, subfile):
         """
-        解析时间数据，进行时间轴重建
-
+        Parse time data for time axis reconstruction
+        
         Parameters
         ----------
-        subfile :
-            时间子包文件字典
+        subfile : dict
+            Dictionary containing time file information
 
         Returns
         -------
-        houghdata :
-            霍夫变换后的数据
-        k_max :
-            时间重建的k值
-        b_max :
-            时间重建的b值
-
+        houghdata : dict
+            Data after Hough transformation
+        k_max : float
+            k value for time reconstruction
+        b_max : float
+            b value for time reconstruction
         """
         TIME_HEAD = b'\x1a\xcf\xfc\x1d.{2}\x90.{245}\x2e\xe9\xc8\xfd'
         buf = b''
@@ -188,18 +209,17 @@ class Parser:
 
     def parser_HK(self, subfile):
         """
-        分析HK文件
-
+        Parse housekeeping (HK) files
+        
         Parameters
         ----------
-        subfile :
-            HK子文件字典
+        subfile : dict
+            Dictionary containing HK file information
 
         Returns
         -------
-        HKdatas : 矩阵
-            每列为UTC, 4通道SiPM电压、电流、温度
-
+        HKdatas : ndarray
+            Matrix with UTC time, 4 SiPM channels' voltage, current, temperature
         """
         HK_HEAD = b'\x4d\x3c.{1}\x1a.{51}'
         HKdatas = [[], [], [], []]
@@ -234,18 +254,17 @@ class Parser:
 
     def parser_Telem(self, telemfile):
         """
-        解析遥测包数据
-
+        Parse telemetry package data
+        
         Parameters
         ----------
-        telemfile :
-            遥测包路径
+        telemfile : Path
+            Path to telemetry package file
 
         Returns
         -------
-        telem :
-            遥测包中UTC时间、sipm平均电压、sipm平均温度
-
+        telem : list
+            List of telemetry data arrays for each channel
         """
         telem = []
 
@@ -270,20 +289,19 @@ class Parser:
 
     def parser_LOG(self, subfiles, Type=None):
         """
-        分析各日志
-
+        Analyze log files and classify subfiles
+        
         Parameters
         ----------
-        Type :
-            日志类型
-        subfiles :
-            子文件列表
+        Type : str or None
+            Log type for sorting ('排序' or None)
+        subfiles : list
+            List of subfile dictionaries
 
         Returns
         -------
-        subfiles_classify:
-            不同观测任务生成的文件的编号或None
-
+        subfiles_classify : list or ndarray
+            Classified subfiles by observation task
         """
 
         if Type == '排序':
@@ -368,6 +386,19 @@ class Parser:
 
     @staticmethod
     def csp_crc32_memory(data):
+        """
+        Calculate CRC32 checksum for data validation
+        
+        Parameters
+        ----------
+        data : bytes
+            Binary data to calculate checksum for
+
+        Returns
+        -------
+        int
+            CRC32 checksum value
+        """
         crc_tab = [
             0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4, 0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB,
             0x8AD958CF, 0x78B2DBCC, 0x6BE22838, 0x9989AB3B, 0x4D43CFD0, 0xBF284CD3, 0xAC78BF27, 0x5E133C24,
@@ -380,7 +411,7 @@ class Parser:
             0x417B1DBC, 0xB3109EBF, 0xA0406D4B, 0x522BEE48, 0x86E18AA3, 0x748A09A0, 0x67DAFA54, 0x95B17957,
             0xCBA24573, 0x39C9C670, 0x2A993584, 0xD8F2B687, 0x0C38D26C, 0xFE53516F, 0xED03A29B, 0x1F682198,
             0x5125DAD3, 0xA34E59D0, 0xB01EAA24, 0x42752927, 0x96BF4DCC, 0x64D4CECF, 0x77843D3B, 0x85EFBE38,
-            0xDBFC821C, 0x2997011F, 0x3AC7F2EB, 0xC8AC71E8, 0x1C661503, 0xEE0D9600, 0xFD5D65F4, 0x0F36E6F7,
+            0xDBFC821C, 0x2997011F, 0x3AC7E3EB, 0xC8AC71E8, 0x1C661503, 0xEE0D9600, 0xFD5D65F4, 0x0F36E6F7,
             0x61C69362, 0x93AD1061, 0x80FDE395, 0x72966096, 0xA65C047D, 0x5437877E, 0x4767748A, 0xB50CF789,
             0xEB1FCBAD, 0x197448AE, 0x0A24BB5A, 0xF84F3859, 0x2C855CB2, 0xDEEEDFB1, 0xCDBE2C45, 0x3FD5AF46,
             0x7198540D, 0x83F3D70E, 0x90A324FA, 0x62C8A7F9, 0xB602C312, 0x44694011, 0x5739B3E5, 0xA55230E6,
@@ -410,20 +441,19 @@ class Parser:
     @staticmethod
     def intertelem(telem, datas):
         """
-        监测数据插值
-
+        Interpolate telemetry data for each event
+        
         Parameters
         ----------
-        telem :
-            监测数据
-        datas :
-            各通道的事例数据
+        telem : list
+            Telemetry data for each channel
+        datas : list
+            Event data for each channel
 
         Returns
         -------
-        datas :
-            各通道事例数据及插值监测数据
-
+        datas : list
+            Event data with interpolated telemetry values
         """
         for i in range(4):
             Min = (datas[i][:, 0].min() - 1)
@@ -443,6 +473,16 @@ class Parser:
         return datas
 
     def extract(self):
+        """
+        Main data extraction function dispatcher
+        
+        Calls the appropriate extraction method based on detector type
+        
+        Returns
+        -------
+        list
+            Paths to extracted data files
+        """
         if self.detector == '天宁01':
             return self.extract01()
         elif self.detector == '天宁02':
@@ -450,19 +490,15 @@ class Parser:
 
     def extract01(self):
         """
-        数据提取主函数
-
-        Parameters
-        ----------
-        datfile :
-            未处理文件中.dat文件路径
-        csvfile :
-            未处理文件中.csv文件路径
-
+        Data extraction for TianNing-01 detector
+        
+        Processes all data files for TianNing-01, extracts science data,
+        applies time calibration, and saves results.
+        
         Returns
         -------
-        None.
-
+        extract_files : list
+            Paths to the extracted data files
         """
         extract_files = []
 
@@ -551,6 +587,17 @@ class Parser:
         return extract_files
 
     def extract02(self):
+        """
+        Data extraction for TianNing-02 detector
+        
+        Processes all data files for TianNing-02, extracts science data,
+        applies time calibration, and saves results.
+        
+        Returns
+        -------
+        extract_files : list
+            Paths to the extracted data files
+        """
         extract_files = []
 
         cl, Type = fin.cl02(self.datfile)
